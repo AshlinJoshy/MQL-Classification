@@ -108,10 +108,10 @@ function RuleBlock({
   return (
     <div 
       className="border border-gray-200 bg-white rounded-md p-2 shadow-sm text-sm cursor-grab active:cursor-grabbing min-w-[200px]"
-      draggable
+      draggable={true}
       onDragStart={(e) => {
-        e.dataTransfer.setData('application/json', JSON.stringify({ type: 'move', ruleId: rule.id, sourceCategory: categoryName }));
-        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'move', ruleId: rule.id, sourceCategory: categoryName }));
+        e.dataTransfer.effectAllowed = 'copyMove';
         e.stopPropagation();
       }}
     >
@@ -398,13 +398,16 @@ export default function LeadCategorizer() {
 
   const onDragOver = (e: React.DragEvent) => {
     e.preventDefault(); 
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
   };
 
   const onDropToCategory = (e: React.DragEvent, targetCategory: string) => {
     e.preventDefault();
+    e.stopPropagation();
     try {
-      const dataStr = e.dataTransfer.getData('application/json');
+      // Use text/plain as it's more universally supported in drag/drop
+      const dataStr = e.dataTransfer.getData('text/plain');
       if (!dataStr) return;
       const data = JSON.parse(dataStr);
       
@@ -543,10 +546,10 @@ export default function LeadCategorizer() {
                 return (
                   <div 
                     key={campaign}
-                    draggable
+                    draggable={true}
                     onDragStart={(e) => {
-                      e.dataTransfer.setData('application/json', JSON.stringify({ type: 'new', campaign }));
-                      e.dataTransfer.effectAllowed = 'copy';
+                      e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'new', campaign }));
+                      e.dataTransfer.effectAllowed = 'copyMove';
                     }}
                     className="flex items-center gap-2 bg-white border border-gray-200 p-2.5 rounded cursor-grab active:cursor-grabbing hover:border-blue-300 hover:shadow-sm transition-all group"
                   >
@@ -593,11 +596,11 @@ export default function LeadCategorizer() {
                         {/* Main Category Row */}
                         <tr 
                           className="bg-white group"
+                          onDragOver={onDragOver}
+                          onDrop={(e) => onDropToCategory(e, category)}
                         >
                           <td 
                             className="px-4 py-4 font-bold text-gray-900 border-r border-gray-100"
-                            onDragOver={onDragOver}
-                            onDrop={(e) => onDropToCategory(e, category)}
                           >
                             <div className="flex items-center justify-between">
                               <span className="text-base">{category}</span>
