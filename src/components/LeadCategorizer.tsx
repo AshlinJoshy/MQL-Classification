@@ -76,7 +76,7 @@ export default function LeadCategorizer() {
           setLeads(parsedLeads);
           setLoading(false);
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error(err);
           setError("Failed to parse CSV data");
           setLoading(false);
