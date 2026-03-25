@@ -225,19 +225,29 @@ export default function LeadCategorizer() {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
+          const seenIds = new Set<string>();
           const parsedLeads: Lead[] = results.data
             .filter((row: any) => row.leadID || row.name || row.utm_campaign)
-            .map((row: any, index: number) => ({
-              id: row.leadID || `row-${index}`,
-              utm_campaign: row['utm_campaign'] || 'Unknown/Empty',
-              utm_source: row['utm_source'] || '',
-              utm_medium: row['utm_medium'] || '',
-              utm_content: row['utm_content'] || '',
-              utm_term: row['utm_term'] || '',
-              source: row['source'] || '',
-              location: row['location'] || '',
-              predictedStage: row['Predicted Stage'] || row['stage'] || 'Unknown'
-            }));
+            .map((row: any, index: number) => {
+              // Ensure each lead has a unique ID even if leadID is duplicated or missing
+              const rawId = row.leadID ? String(row.leadID).trim() : '';
+              let uniqueId = rawId || `row-${index}`;
+              if (seenIds.has(uniqueId)) {
+                uniqueId = `${uniqueId}_${index}`;
+              }
+              seenIds.add(uniqueId);
+              return {
+                id: uniqueId,
+                utm_campaign: row['utm_campaign'] || 'Unknown/Empty',
+                utm_source: row['utm_source'] || '',
+                utm_medium: row['utm_medium'] || '',
+                utm_content: row['utm_content'] || '',
+                utm_term: row['utm_term'] || '',
+                source: row['source'] || '',
+                location: row['location'] || '',
+                predictedStage: row['Predicted Stage'] || row['stage'] || 'Unknown'
+              };
+            });
           setLeads(parsedLeads);
           setLoading(false);
         },
