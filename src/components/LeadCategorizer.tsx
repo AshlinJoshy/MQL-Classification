@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Papa from 'papaparse';
-import { GripVertical, Plus, Trash2, RefreshCw } from 'lucide-react';
+import { GripVertical, Plus, Trash2, RefreshCw, Clipboard, ClipboardCheck } from 'lucide-react';
 
 // --- Types ---
 interface Lead {
@@ -457,6 +457,42 @@ export default function LeadCategorizer() {
     setMapping(newMapping);
   };
 
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyForSheets = useCallback(() => {
+    const columns = [
+      'Lead ID', 'Category', 'UTM Campaign', 'UTM Source', 'UTM Medium',
+      'UTM Content', 'UTM Term', 'Source', 'Location', 'Predicted Stage'
+    ];
+    const rows = leads.map(lead => {
+      const category = leadCategories.get(lead.id) || 'Uncategorized';
+      return [
+        lead.id,
+        category,
+        lead.utm_campaign,
+        lead.utm_source,
+        lead.utm_medium,
+        lead.utm_content,
+        lead.utm_term,
+        lead.source,
+        lead.location,
+        lead.predictedStage,
+      ].map(v => {
+        const s = String(v ?? '');
+        // Wrap in quotes if the value contains tabs, newlines or quotes
+        if (s.includes('\t') || s.includes('\n') || s.includes('"')) {
+          return `"${s.replace(/"/g, '""')}"`;
+        }
+        return s;
+      });
+    });
+    const tsv = [columns, ...rows].map(r => r.join('\t')).join('\n');
+    navigator.clipboard.writeText(tsv).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }, [leads, leadCategories]);
+
 
   // --- Render ---
 
@@ -492,7 +528,7 @@ export default function LeadCategorizer() {
 
       {/* Header Controls */}
       <div className="flex flex-col md:flex-row justify-between gap-4 items-center bg-white p-4 rounded-lg shadow-sm">
-        <div className="flex items-center gap-4 w-full md:w-auto">
+        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
           <button 
             onClick={fetchData} 
             disabled={loading}
@@ -500,6 +536,19 @@ export default function LeadCategorizer() {
           >
             <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
             Refresh Data
+          </button>
+          <button
+            onClick={handleCopyForSheets}
+            disabled={leads.length === 0}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 ${
+              copied
+                ? 'bg-green-600 hover:bg-green-700 text-white'
+                : 'bg-gray-700 hover:bg-gray-800 text-white'
+            }`}
+            title="Copy all leads with their assigned categories as tab-separated values — paste directly into Google Sheets"
+          >
+            {copied ? <ClipboardCheck size={18} /> : <Clipboard size={18} />}
+            {copied ? 'Copied!' : 'Copy for Sheets'}
           </button>
         </div>
         
